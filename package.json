@@ -1,0 +1,15 @@
+{
+  "name": "rf-hunter-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker serving the RF Hunter one-pager (makohin.lviv.ua)",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "start": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

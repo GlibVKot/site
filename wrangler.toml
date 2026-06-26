@@ -1,0 +1,13 @@
+# Cloudflare Worker that serves the RF Hunter one-pager.
+#
+# This worker is already bound to the custom domain `makohin.lviv.ua` in the
+# Cloudflare dashboard. We intentionally do NOT declare `routes` here so that
+# `wrangler deploy` only updates the script and leaves the existing custom
+# domain / route mapping untouched.
+
+name = "noisy-sun-f5d1"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+# Serve the worker on its workers.dev subdomain too (handy for previews).
+workers_dev = true
