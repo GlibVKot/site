@@ -1,4 +1,5 @@
-# Static deploy of the RF Hunter one-pager. No build step; just publish dist/.
+# Static deploy of the RF Hunter one-pager.
+# dist/index.html is the prebuilt artifact (regenerate with `npm run build`).
 [build]
   publish = "dist"
   command = ""

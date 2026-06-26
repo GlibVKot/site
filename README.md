@@ -5,17 +5,31 @@ A single Cloudflare Worker that serves the **RF Hunter** product one-pager
 HTML document in Ukrainian; the drone photo is inlined as a data URI so the
 Worker has **no external asset dependencies**.
 
-- Worker name: `noisy-sun-f5d1`
-- Custom domain: `makohin.lviv.ua` (already bound in the Cloudflare dashboard)
+It is deployed two ways from one source of truth (`src/index.js`):
+
+- **Cloudflare Worker** `noisy-sun-f5d1` → custom domain `makohin.lviv.ua`
+- **Netlify** static site `makohin` → https://makohin.netlify.app
+  *(currently live)*
 
 ## Project layout
 
 ```
 src/
-  index.js   # the Worker: builds the HTML page and serves it
-  image.js   # optimized drone photo (1000×750 JPEG) as a data URI
-wrangler.toml
+  index.js     # canonical source: the Worker builds & serves the HTML page
+  image.js     # optimized drone photo (1000×750 JPEG) as a data URI
+scripts/
+  build.mjs    # renders dist/index.html from src/index.js (for Netlify)
+dist/
+  index.html   # prebuilt static artifact (npm run build to regenerate)
+wrangler.toml  # Cloudflare config
+netlify.toml   # Netlify config (publishes dist/)
 package.json
+```
+
+## Build
+
+```bash
+npm run build        # regenerate dist/index.html from src/index.js
 ```
 
 ## Local preview
@@ -25,7 +39,16 @@ npm install
 npm run dev          # wrangler dev → http://localhost:8787
 ```
 
-## Deploy
+## Deploy — Netlify (live)
+
+The static build in `dist/` is published to the `makohin` Netlify site:
+
+```bash
+npm run build
+npx netlify deploy --prod --dir dist --site makohin
+```
+
+## Deploy — Cloudflare Worker
 
 Requires Cloudflare auth (one of):
 
