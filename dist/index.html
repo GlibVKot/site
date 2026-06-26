@@ -62,6 +62,18 @@
   .btn.signal{background:linear-gradient(180deg,#1b3a8f,#142e72); border-color:#27479e; color:#fff}
   .btn.wa{background:linear-gradient(180deg,#10803f,#0c6633); border-color:#16a34a; color:#fff}
   .btn svg{width:18px; height:18px; fill:currentColor; flex:0 0 auto}
+  /* embedded web-app preview */
+  .embed{margin:10px 0 18px; border:1px solid var(--card-brd); border-radius:14px; overflow:hidden; background:#0c1730}
+  .embed-head{display:flex; align-items:center; gap:7px; padding:10px 14px; background:#0e1a30; border-bottom:1px solid var(--card-brd)}
+  .embed-head .dot{width:10px; height:10px; border-radius:50%; background:#27406e; flex:0 0 auto}
+  .embed-title{margin-left:8px; font-size:13px; color:var(--muted); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .embed-open{font-size:13px; font-weight:650; white-space:nowrap; border-bottom:0}
+  .embed-frame{position:relative; aspect-ratio:16/10; background:radial-gradient(circle at 50% 40%,#16335a,#0a1426)}
+  .embed-frame iframe{position:absolute; inset:0; width:100%; height:100%; border:0; display:block}
+  .embed-activate{position:absolute; inset:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+    border:0; cursor:pointer; background:rgba(8,15,28,.35); color:#fff; font:inherit; -webkit-tap-highlight-color:transparent}
+  .embed-activate span{background:rgba(8,15,28,.72); border:1px solid var(--card-brd); padding:10px 16px; border-radius:999px; font-size:14px; font-weight:650}
+  .embed-frame.activated .embed-activate{display:none}
   footer{text-align:center; color:var(--muted); font-size:13px; margin-top:34px}
   @media (min-width:560px){ .specs{grid-template-columns:1fr 1fr; column-gap:34px}
     .spec{border-top:1px solid rgba(255,255,255,.06)} .spec:nth-child(2){border-top:0} }
@@ -106,6 +118,20 @@
       <li><b>Локалізація.</b> На основі рівнів сигналу та орієнтації камери в різних точках визначається напрям на РЕБ і проводиться триангуляція</li>
       <li><b>Інтерфейс.</b> Результат локалізації відображається на карті у <a href="https://flyinghunter-heatmap.netlify.app" target="_blank" rel="noopener">веб-додатку</a></li>
     </ul>
+    <figure class="embed">
+      <figcaption class="embed-head">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="embed-title">Інтерактивна карта — найвірогідніше положення випромінювача</span>
+        <a class="embed-open" href="https://flyinghunter-heatmap.netlify.app" target="_blank" rel="noopener">Відкрити ↗</a>
+      </figcaption>
+      <div class="embed-frame">
+        <iframe src="https://flyinghunter-heatmap.netlify.app" title="Вебдодаток RF Hunter — карта локалізації РЕБ"
+          loading="lazy" referrerpolicy="no-referrer"></iframe>
+        <button class="embed-activate" type="button" aria-label="Активувати інтерактивну карту">
+          <span>🗺️ Натисніть, щоб взаємодіяти з картою</span>
+        </button>
+      </div>
+    </figure>
   </section>
 
   <section>
@@ -134,5 +160,15 @@
 
   <footer>RF Hunter · makohin.lviv.ua</footer>
 </div>
+<script>
+  // Click-to-activate overlay: keeps the interactive map from capturing
+  // page scroll/touch until the visitor explicitly engages with it.
+  (function(){
+    var frame = document.querySelector('.embed-frame');
+    if(!frame) return;
+    var btn = frame.querySelector('.embed-activate');
+    if(btn) btn.addEventListener('click', function(){ frame.classList.add('activated'); });
+  })();
+</script>
 </body>
 </html>
