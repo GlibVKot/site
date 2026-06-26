@@ -1,0 +1,4 @@
+# Static deploy of the RF Hunter one-pager. No build step; just publish dist/.
+[build]
+  publish = "dist"
+  command = ""
