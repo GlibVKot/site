@@ -81,13 +81,21 @@ const html = /* html */ `<!DOCTYPE html>
   .embed-open{font-size:13px; font-weight:650; white-space:nowrap; border-bottom:0}
   .embed-frame{position:relative; aspect-ratio:16/10; background:radial-gradient(circle at 50% 40%,#16335a,#0a1426)}
   .embed-frame iframe{position:absolute; inset:0; width:100%; height:100%; border:0; display:block}
-  .embed-load{position:absolute; inset:0; width:100%; height:100%; display:flex; flex-direction:column; gap:12px;
+  .embed-load{position:absolute; inset:0; z-index:2; width:100%; height:100%; display:flex; flex-direction:column; gap:12px;
     align-items:center; justify-content:center; border:0; cursor:pointer; background:transparent; color:#fff; font:inherit;
     -webkit-tap-highlight-color:transparent}
   .embed-load::before{content:"▶"; display:flex; align-items:center; justify-content:center; width:58px; height:58px;
-    border-radius:50%; background:rgba(8,15,28,.72); border:1px solid var(--card-brd); font-size:20px; padding-left:4px}
+    border-radius:50%; background:rgba(8,15,28,.72); border:1px solid var(--card-brd); font-size:20px; padding-left:4px; box-sizing:border-box}
   .embed-load span{background:rgba(8,15,28,.6); border:1px solid var(--card-brd); padding:8px 15px; border-radius:999px; font-size:13.5px; font-weight:650}
   .embed-load:hover::before{border-color:var(--accent-2)}
+  /* loading state: swap the play glyph for a spinner until the map is ready */
+  .embed-load.is-loading{cursor:default}
+  .embed-load.is-loading::before{content:""; width:50px; height:50px; padding:0; background:transparent;
+    border:3px solid rgba(255,255,255,.25); border-top-color:#fff; animation:spin .8s linear infinite}
+  .embed-load.is-loading:hover::before{border-color:rgba(255,255,255,.25); border-top-color:#fff}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .embed-frame iframe{z-index:1}
+  .embed-frame.loaded .embed-load{display:none}
   footer{text-align:center; color:var(--muted); font-size:13px; margin-top:34px}
   @media (min-width:560px){ .specs{grid-template-columns:1fr 1fr; column-gap:34px}
     .spec{border-top:1px solid rgba(255,255,255,.06)} .spec:nth-child(2){border-top:0} }
@@ -182,14 +190,20 @@ const html = /* html */ `<!DOCTYPE html>
     var btn = frame.querySelector('.embed-load');
     if(!btn) return;
     btn.addEventListener('click', function(){
+      if(btn.classList.contains('is-loading')) return;
       var ifr = document.createElement('iframe');
       ifr.src = frame.getAttribute('data-src');
       ifr.title = 'Вебдодаток RF Hunter — карта локалізації РЕБ';
       ifr.loading = 'eager';
       ifr.setAttribute('referrerpolicy', 'no-referrer');
       ifr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox');
+      // Keep a spinner over the placeholder until the map has actually loaded,
+      // so there is no blank gap between the click and the map appearing.
+      ifr.addEventListener('load', function(){ frame.classList.add('loaded'); });
+      var span = btn.querySelector('span');
+      if(span) span.textContent = 'Завантаження карти…';
+      btn.classList.add('is-loading');
       frame.appendChild(ifr);
-      btn.remove();
     });
   })();
 </script>
