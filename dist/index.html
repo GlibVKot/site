@@ -70,10 +70,13 @@
   .embed-open{font-size:13px; font-weight:650; white-space:nowrap; border-bottom:0}
   .embed-frame{position:relative; aspect-ratio:16/10; background:radial-gradient(circle at 50% 40%,#16335a,#0a1426)}
   .embed-frame iframe{position:absolute; inset:0; width:100%; height:100%; border:0; display:block}
-  .embed-activate{position:absolute; inset:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center;
-    border:0; cursor:pointer; background:rgba(8,15,28,.35); color:#fff; font:inherit; -webkit-tap-highlight-color:transparent}
-  .embed-activate span{background:rgba(8,15,28,.72); border:1px solid var(--card-brd); padding:10px 16px; border-radius:999px; font-size:14px; font-weight:650}
-  .embed-frame.activated .embed-activate{display:none}
+  .embed-load{position:absolute; inset:0; width:100%; height:100%; display:flex; flex-direction:column; gap:12px;
+    align-items:center; justify-content:center; border:0; cursor:pointer; background:transparent; color:#fff; font:inherit;
+    -webkit-tap-highlight-color:transparent}
+  .embed-load::before{content:"▶"; display:flex; align-items:center; justify-content:center; width:58px; height:58px;
+    border-radius:50%; background:rgba(8,15,28,.72); border:1px solid var(--card-brd); font-size:20px; padding-left:4px}
+  .embed-load span{background:rgba(8,15,28,.6); border:1px solid var(--card-brd); padding:8px 15px; border-radius:999px; font-size:13.5px; font-weight:650}
+  .embed-load:hover::before{border-color:var(--accent-2)}
   footer{text-align:center; color:var(--muted); font-size:13px; margin-top:34px}
   @media (min-width:560px){ .specs{grid-template-columns:1fr 1fr; column-gap:34px}
     .spec{border-top:1px solid rgba(255,255,255,.06)} .spec:nth-child(2){border-top:0} }
@@ -124,11 +127,9 @@
         <span class="embed-title">Інтерактивна карта — найвірогідніше положення випромінювача</span>
         <a class="embed-open" href="https://flyinghunter-heatmap.netlify.app" target="_blank" rel="noopener">Відкрити ↗</a>
       </figcaption>
-      <div class="embed-frame">
-        <iframe src="https://flyinghunter-heatmap.netlify.app" title="Вебдодаток RF Hunter — карта локалізації РЕБ"
-          loading="lazy" referrerpolicy="no-referrer"></iframe>
-        <button class="embed-activate" type="button" aria-label="Активувати інтерактивну карту">
-          <span>🗺️ Натисніть, щоб взаємодіяти з картою</span>
+      <div class="embed-frame" data-src="https://flyinghunter-heatmap.netlify.app">
+        <button class="embed-load" type="button" aria-label="Завантажити інтерактивну карту">
+          <span>🗺️ Завантажити інтерактивну карту</span>
         </button>
       </div>
     </figure>
@@ -161,13 +162,24 @@
   <footer>RF Hunter · makohin.lviv.ua</footer>
 </div>
 <script>
-  // Click-to-activate overlay: keeps the interactive map from capturing
-  // page scroll/touch until the visitor explicitly engages with it.
+  // Click-to-LOAD facade: the heavy third-party map is only fetched when the
+  // visitor asks for it (keeps the initial page light), and the iframe is
+  // sandboxed so the embedded app cannot navigate or redirect the top page.
   (function(){
     var frame = document.querySelector('.embed-frame');
     if(!frame) return;
-    var btn = frame.querySelector('.embed-activate');
-    if(btn) btn.addEventListener('click', function(){ frame.classList.add('activated'); });
+    var btn = frame.querySelector('.embed-load');
+    if(!btn) return;
+    btn.addEventListener('click', function(){
+      var ifr = document.createElement('iframe');
+      ifr.src = frame.getAttribute('data-src');
+      ifr.title = 'Вебдодаток RF Hunter — карта локалізації РЕБ';
+      ifr.loading = 'eager';
+      ifr.setAttribute('referrerpolicy', 'no-referrer');
+      ifr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox');
+      frame.appendChild(ifr);
+      btn.remove();
+    });
   })();
 </script>
 </body>

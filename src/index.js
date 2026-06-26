@@ -81,10 +81,13 @@ const html = /* html */ `<!DOCTYPE html>
   .embed-open{font-size:13px; font-weight:650; white-space:nowrap; border-bottom:0}
   .embed-frame{position:relative; aspect-ratio:16/10; background:radial-gradient(circle at 50% 40%,#16335a,#0a1426)}
   .embed-frame iframe{position:absolute; inset:0; width:100%; height:100%; border:0; display:block}
-  .embed-activate{position:absolute; inset:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center;
-    border:0; cursor:pointer; background:rgba(8,15,28,.35); color:#fff; font:inherit; -webkit-tap-highlight-color:transparent}
-  .embed-activate span{background:rgba(8,15,28,.72); border:1px solid var(--card-brd); padding:10px 16px; border-radius:999px; font-size:14px; font-weight:650}
-  .embed-frame.activated .embed-activate{display:none}
+  .embed-load{position:absolute; inset:0; width:100%; height:100%; display:flex; flex-direction:column; gap:12px;
+    align-items:center; justify-content:center; border:0; cursor:pointer; background:transparent; color:#fff; font:inherit;
+    -webkit-tap-highlight-color:transparent}
+  .embed-load::before{content:"▶"; display:flex; align-items:center; justify-content:center; width:58px; height:58px;
+    border-radius:50%; background:rgba(8,15,28,.72); border:1px solid var(--card-brd); font-size:20px; padding-left:4px}
+  .embed-load span{background:rgba(8,15,28,.6); border:1px solid var(--card-brd); padding:8px 15px; border-radius:999px; font-size:13.5px; font-weight:650}
+  .embed-load:hover::before{border-color:var(--accent-2)}
   footer{text-align:center; color:var(--muted); font-size:13px; margin-top:34px}
   @media (min-width:560px){ .specs{grid-template-columns:1fr 1fr; column-gap:34px}
     .spec{border-top:1px solid rgba(255,255,255,.06)} .spec:nth-child(2){border-top:0} }
@@ -135,11 +138,9 @@ const html = /* html */ `<!DOCTYPE html>
         <span class="embed-title">Інтерактивна карта — найвірогідніше положення випромінювача</span>
         <a class="embed-open" href="${LINKS.webApp}" target="_blank" rel="noopener">Відкрити ↗</a>
       </figcaption>
-      <div class="embed-frame">
-        <iframe src="${LINKS.webApp}" title="Вебдодаток RF Hunter — карта локалізації РЕБ"
-          loading="lazy" referrerpolicy="no-referrer"></iframe>
-        <button class="embed-activate" type="button" aria-label="Активувати інтерактивну карту">
-          <span>🗺️ Натисніть, щоб взаємодіяти з картою</span>
+      <div class="embed-frame" data-src="${LINKS.webApp}">
+        <button class="embed-load" type="button" aria-label="Завантажити інтерактивну карту">
+          <span>🗺️ Завантажити інтерактивну карту</span>
         </button>
       </div>
     </figure>
@@ -172,34 +173,75 @@ const html = /* html */ `<!DOCTYPE html>
   <footer>RF Hunter · makohin.lviv.ua</footer>
 </div>
 <script>
-  // Click-to-activate overlay: keeps the interactive map from capturing
-  // page scroll/touch until the visitor explicitly engages with it.
+  // Click-to-LOAD facade: the heavy third-party map is only fetched when the
+  // visitor asks for it (keeps the initial page light), and the iframe is
+  // sandboxed so the embedded app cannot navigate or redirect the top page.
   (function(){
     var frame = document.querySelector('.embed-frame');
     if(!frame) return;
-    var btn = frame.querySelector('.embed-activate');
-    if(btn) btn.addEventListener('click', function(){ frame.classList.add('activated'); });
+    var btn = frame.querySelector('.embed-load');
+    if(!btn) return;
+    btn.addEventListener('click', function(){
+      var ifr = document.createElement('iframe');
+      ifr.src = frame.getAttribute('data-src');
+      ifr.title = 'Вебдодаток RF Hunter — карта локалізації РЕБ';
+      ifr.loading = 'eager';
+      ifr.setAttribute('referrerpolicy', 'no-referrer');
+      ifr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox');
+      frame.appendChild(ifr);
+      btn.remove();
+    });
   })();
 </script>
 </body>
 </html>`;
 
+// Security headers applied to every response. The page is fully static with no
+// user input or reflected data, so the CSP's main job is to lock down framing,
+// base URI, forms, objects, and resource origins. 'unsafe-inline' is used only
+// for the page's own inline <style>/<script> (there is no injection surface);
+// the only permitted frame origin is the heatmap web app.
+const CSP = [
+  "default-src 'none'",
+  "img-src 'self' data:",
+  "style-src 'unsafe-inline'",
+  "script-src 'unsafe-inline'",
+  "frame-src https://flyinghunter-heatmap.netlify.app",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+  "upgrade-insecure-requests",
+].join("; ");
+
+const SECURITY_HEADERS = {
+  "content-security-policy": CSP,
+  "strict-transport-security": "max-age=31536000",
+  "x-frame-options": "DENY",
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "permissions-policy":
+    "geolocation=(), microphone=(), camera=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), browsing-topics=()",
+  "cross-origin-opener-policy": "same-origin",
+  "cross-origin-resource-policy": "same-origin",
+};
+
 export default {
   async fetch(request) {
     const { pathname } = new URL(request.url);
 
-    // Lightweight health/robots niceties; everything else renders the page.
+    // Lightweight robots niceties; everything else renders the page.
     if (pathname === "/robots.txt") {
       return new Response("User-agent: *\nAllow: /\n", {
-        headers: { "content-type": "text/plain; charset=utf-8" },
+        headers: { ...SECURITY_HEADERS, "content-type": "text/plain; charset=utf-8" },
       });
     }
 
     return new Response(html, {
       headers: {
+        ...SECURITY_HEADERS,
         "content-type": "text/html; charset=utf-8",
         "cache-control": "public, max-age=300",
-        "x-content-type-options": "nosniff",
       },
     });
   },
