@@ -214,7 +214,7 @@ const CSP = [
   "upgrade-insecure-requests",
 ].join("; ");
 
-const SECURITY_HEADERS = {
+export const SECURITY_HEADERS = {
   "content-security-policy": CSP,
   "strict-transport-security": "max-age=31536000",
   "x-frame-options": "DENY",

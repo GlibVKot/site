@@ -1,0 +1,9 @@
+/*
+  content-security-policy: default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-src https://flyinghunter-heatmap.netlify.app; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
+  strict-transport-security: max-age=31536000
+  x-frame-options: DENY
+  x-content-type-options: nosniff
+  referrer-policy: strict-origin-when-cross-origin
+  permissions-policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=(), browsing-topics=()
+  cross-origin-opener-policy: same-origin
+  cross-origin-resource-policy: same-origin
