@@ -1,4 +1,5 @@
 import { droneImage } from "./image.js";
+import { mapPoster } from "./map.js";
 
 // Contact + link constants (unwrapped from the Google Doc's redirect URLs).
 const LINKS = {
@@ -80,22 +81,21 @@ const html = /* html */ `<!DOCTYPE html>
   .embed-title{margin-left:8px; font-size:13px; color:var(--muted); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .embed-open{font-size:13px; font-weight:650; white-space:nowrap; border-bottom:0}
   .embed-frame{position:relative; aspect-ratio:16/10; background:radial-gradient(circle at 50% 40%,#16335a,#0a1426)}
-  .embed-frame iframe{position:absolute; inset:0; width:100%; height:100%; border:0; display:block}
-  .embed-load{position:absolute; inset:0; z-index:2; width:100%; height:100%; display:flex; flex-direction:column; gap:12px;
-    align-items:center; justify-content:center; border:0; cursor:pointer; background:transparent; color:#fff; font:inherit;
-    -webkit-tap-highlight-color:transparent}
-  .embed-load::before{content:"▶"; display:flex; align-items:center; justify-content:center; width:58px; height:58px;
-    border-radius:50%; background:rgba(8,15,28,.72); border:1px solid var(--card-brd); font-size:20px; padding-left:4px; box-sizing:border-box}
-  .embed-load span{background:rgba(8,15,28,.6); border:1px solid var(--card-brd); padding:8px 15px; border-radius:999px; font-size:13.5px; font-weight:650}
-  .embed-load:hover::before{border-color:var(--accent-2)}
-  /* loading state: swap the play glyph for a spinner until the map is ready */
-  .embed-load.is-loading{cursor:default}
-  .embed-load.is-loading::before{content:""; width:50px; height:50px; padding:0; background:transparent;
-    border:3px solid rgba(255,255,255,.25); border-top-color:#fff; animation:spin .8s linear infinite}
-  .embed-load.is-loading:hover::before{border-color:rgba(255,255,255,.25); border-top-color:#fff}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .embed-frame iframe{z-index:1}
-  .embed-frame.loaded .embed-load{display:none}
+  .embed-frame iframe{position:absolute; inset:0; width:100%; height:100%; border:0; display:block; z-index:2;
+    opacity:0; pointer-events:none; transition:opacity .45s ease}
+  .embed-frame.loaded iframe{opacity:1; pointer-events:auto}
+  /* instant screenshot poster shown while the live map loads in the background */
+  .embed-poster{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; z-index:1; display:block}
+  .embed-badge{position:absolute; left:12px; bottom:12px; z-index:3; display:flex; align-items:center; gap:7px;
+    background:rgba(8,15,28,.72); border:1px solid var(--card-brd); padding:6px 11px; border-radius:999px; font-size:12px; color:var(--muted)}
+  .embed-badge::before{content:""; width:8px; height:8px; border-radius:50%; background:#facc15; box-shadow:0 0 0 3px rgba(250,204,21,.18)}
+  .embed-frame.loaded .embed-badge{background:rgba(8,15,28,.72)}
+  .embed-frame.loaded .embed-badge::before{background:var(--accent); box-shadow:0 0 0 3px rgba(74,222,128,.2)}
+  /* on phones, let the map fill most of the screen height so it is usable */
+  @media (max-width:559px){
+    .embed-frame{aspect-ratio:auto; height:82vh; height:82svh; min-height:420px}
+    .embed-poster{object-position:top center}
+  }
   footer{text-align:center; color:var(--muted); font-size:13px; margin-top:34px}
   @media (min-width:560px){ .specs{grid-template-columns:1fr 1fr; column-gap:34px}
     .spec{border-top:1px solid rgba(255,255,255,.06)} .spec:nth-child(2){border-top:0} }
@@ -147,9 +147,9 @@ const html = /* html */ `<!DOCTYPE html>
         <a class="embed-open" href="${LINKS.webApp}" target="_blank" rel="noopener">Відкрити ↗</a>
       </figcaption>
       <div class="embed-frame" data-src="${LINKS.webApp}">
-        <button class="embed-load" type="button" aria-label="Завантажити інтерактивну карту">
-          <span>🗺️ Завантажити інтерактивну карту</span>
-        </button>
+        <img class="embed-poster" src="${mapPoster}" width="900" height="563"
+          alt="Знімок екрана вебдодатку RF Hunter — карта локалізації РЕБ">
+        <span class="embed-badge"><span class="embed-badge-text">Прев'ю — завантаження…</span></span>
       </div>
     </figure>
   </section>
@@ -181,30 +181,31 @@ const html = /* html */ `<!DOCTYPE html>
   <footer>RF Hunter · makohin.lviv.ua</footer>
 </div>
 <script>
-  // Click-to-LOAD facade: the heavy third-party map is only fetched when the
-  // visitor asks for it (keeps the initial page light), and the iframe is
-  // sandboxed so the embedded app cannot navigate or redirect the top page.
+  // Show the screenshot poster instantly, then load the live interactive map in
+  // the background and fade it in once ready. The iframe is sandboxed so the
+  // embedded app cannot navigate or redirect the top page.
   (function(){
     var frame = document.querySelector('.embed-frame');
-    if(!frame) return;
-    var btn = frame.querySelector('.embed-load');
-    if(!btn) return;
-    btn.addEventListener('click', function(){
-      if(btn.classList.contains('is-loading')) return;
+    if(!frame || frame.dataset.loaded) return;
+    function load(){
+      if(frame.dataset.loaded) return;
+      frame.dataset.loaded = '1';
       var ifr = document.createElement('iframe');
       ifr.src = frame.getAttribute('data-src');
       ifr.title = 'Вебдодаток RF Hunter — карта локалізації РЕБ';
       ifr.loading = 'eager';
       ifr.setAttribute('referrerpolicy', 'no-referrer');
       ifr.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox');
-      // Keep a spinner over the placeholder until the map has actually loaded,
-      // so there is no blank gap between the click and the map appearing.
-      ifr.addEventListener('load', function(){ frame.classList.add('loaded'); });
-      var span = btn.querySelector('span');
-      if(span) span.textContent = 'Завантаження карти…';
-      btn.classList.add('is-loading');
-      frame.appendChild(ifr);
-    });
+      ifr.addEventListener('load', function(){
+        frame.classList.add('loaded');
+        var t = frame.querySelector('.embed-badge-text');
+        if(t) t.textContent = 'Інтерактивна карта';
+      });
+      frame.insertBefore(ifr, frame.firstChild);
+    }
+    // Defer slightly so the visible page renders first, then load in background.
+    if('requestIdleCallback' in window){ requestIdleCallback(load, { timeout: 2500 }); }
+    else { window.addEventListener('load', function(){ setTimeout(load, 300); }); }
   })();
 </script>
 </body>
